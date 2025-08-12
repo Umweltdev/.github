@@ -3,7 +3,7 @@ name: ClickUp Task Sync
 on:
   workflow_call:
     inputs:
-      clickup_api_token:
+      CLICKUP_API_TOKEN:
         required: true
         type: string
 
@@ -27,7 +27,7 @@ jobs:
         if: env.TASK_ID != ''
         run: |
           curl -X PUT "https://api.clickup.com/api/v2/task/${TASK_ID}" \
-            -H "Authorization: ${{ inputs.clickup_api_token }}" \
+            -H "Authorization: ${{secrets.CLICKUP_API_TOKEN }}" \
             -H "Content-Type: application/json" \
             -d '{"status": "In Progress"}'
 
@@ -50,7 +50,7 @@ jobs:
         if: env.TASK_ID != ''
         run: |
           curl -X PUT "https://api.clickup.com/api/v2/task/${TASK_ID}" \
-            -H "Authorization: ${{ inputs.clickup_api_token }}" \
+            -H "Authorization: ${{ secrets.CLICKUP_API_TOKEN }}" \
             -H "Content-Type: application/json" \
             -d '{"status": "In Review"}'
 
@@ -73,7 +73,7 @@ jobs:
         if: env.TASK_ID != ''
         run: |
           curl -X PUT "https://api.clickup.com/api/v2/task/${TASK_ID}" \
-            -H "Authorization: ${{ inputs.clickup_api_token }}" \
+            -H "Authorization: ${{ secrets.CLICKUP_API_TOKEN  }}" \
             -H "Content-Type: application/json" \
             -d '{"status": "Ready for Testing"}'
 
@@ -96,6 +96,6 @@ jobs:
         if: env.TASK_ID != ''
         run: |
           curl -X PUT "https://api.clickup.com/api/v2/task/${TASK_ID}" \
-            -H "Authorization: ${{ inputs.clickup_api_token }}" \
+            -H "Authorization: ${{ secrets.CLICKUP_API_TOKEN  }}" \
             -H "Content-Type: application/json" \
             -d '{"status": "Completed"}'
