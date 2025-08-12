@@ -1,0 +1,101 @@
+name: ClickUp Task Sync
+
+on:
+  workflow_call:
+    inputs:
+      clickup_api_token:
+        required: true
+        type: string
+
+jobs:
+  branch_created:
+    name: Move to In Progress when branch is created
+    runs-on: ubuntu-latest
+    if: github.event_name == 'create' && startsWith(github.ref, 'refs/heads/')
+    steps:
+      - name: Extract Task ID from Branch Name
+        run: |
+          BRANCH="${GITHUB_REF#refs/heads/}"
+          echo "Branch name: $BRANCH"
+          if [[ "$BRANCH" =~ CU-([a-zA-Z0-9]+) ]]; then
+            echo "TASK_ID=${BASH_REMATCH[1]}" >> $GITHUB_ENV
+          else
+            echo "No ClickUp task ID found in branch name — skipping."
+            exit 0
+          fi
+      - name: Update ClickUp Task to In Progress
+        if: env.TASK_ID != ''
+        run: |
+          curl -X PUT "https://api.clickup.com/api/v2/task/${TASK_ID}" \
+            -H "Authorization: ${{ inputs.clickup_api_token }}" \
+            -H "Content-Type: application/json" \
+            -d '{"status": "In Progress"}'
+
+  pr_opened:
+    name: Move to In Review when PR is opened
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request' && github.event.action == 'opened'
+    steps:
+      - name: Extract Task ID from Branch Name
+        run: |
+          BRANCH="${GITHUB_HEAD_REF}"
+          echo "Branch name: $BRANCH"
+          if [[ "$BRANCH" =~ CU-([a-zA-Z0-9]+) ]]; then
+            echo "TASK_ID=${BASH_REMATCH[1]}" >> $GITHUB_ENV
+          else
+            echo "No ClickUp task ID found in branch name — skipping."
+            exit 0
+          fi
+      - name: Update ClickUp Task to In Review
+        if: env.TASK_ID != ''
+        run: |
+          curl -X PUT "https://api.clickup.com/api/v2/task/${TASK_ID}" \
+            -H "Authorization: ${{ inputs.clickup_api_token }}" \
+            -H "Content-Type: application/json" \
+            -d '{"status": "In Review"}'
+
+  pr_merged_to_develop:
+    name: Move to Ready for Testing when PR merges to develop
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request' && github.event.action == 'closed' && github.event.pull_request.merged == true && github.base_ref == 'develop'
+    steps:
+      - name: Extract Task ID from Branch Name
+        run: |
+          BRANCH="${GITHUB_HEAD_REF}"
+          echo "Branch name: $BRANCH"
+          if [[ "$BRANCH" =~ CU-([a-zA-Z0-9]+) ]]; then
+            echo "TASK_ID=${BASH_REMATCH[1]}" >> $GITHUB_ENV
+          else
+            echo "No ClickUp task ID found in branch name — skipping."
+            exit 0
+          fi
+      - name: Update ClickUp Task to Ready for Testing
+        if: env.TASK_ID != ''
+        run: |
+          curl -X PUT "https://api.clickup.com/api/v2/task/${TASK_ID}" \
+            -H "Authorization: ${{ inputs.clickup_api_token }}" \
+            -H "Content-Type: application/json" \
+            -d '{"status": "Ready for Testing"}'
+
+  pr_merged_to_main:
+    name: Move to Completed when PR merges to main
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request' && github.event.action == 'closed' && github.event.pull_request.merged == true && github.base_ref == 'main'
+    steps:
+      - name: Extract Task ID from Branch Name
+        run: |
+          BRANCH="${GITHUB_HEAD_REF}"
+          echo "Branch name: $BRANCH"
+          if [[ "$BRANCH" =~ CU-([a-zA-Z0-9]+) ]]; then
+            echo "TASK_ID=${BASH_REMATCH[1]}" >> $GITHUB_ENV
+          else
+            echo "No ClickUp task ID found in branch name — skipping."
+            exit 0
+          fi
+      - name: Update ClickUp Task to Completed
+        if: env.TASK_ID != ''
+        run: |
+          curl -X PUT "https://api.clickup.com/api/v2/task/${TASK_ID}" \
+            -H "Authorization: ${{ inputs.clickup_api_token }}" \
+            -H "Content-Type: application/json" \
+            -d '{"status": "Completed"}'
